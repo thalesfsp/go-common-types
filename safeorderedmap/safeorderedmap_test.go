@@ -210,15 +210,6 @@ func TestSafeOrderedMapFind(t *testing.T) {
 	}
 }
 
-// Any
-// TakeWhile
-// DropWhile
-// Union
-// Difference
-// Subset
-// Superset
-// Intersection
-
 func TestSafeOrderedMapAny(t *testing.T) {
 	s := New[int]()
 	s.Add("1", 1).Add("2", 2).Add("3", 3)
@@ -300,4 +291,31 @@ func TestSafeOrderedMapIntersection(t *testing.T) {
 	s2.Add("2", 2).Add("3", 3).Add("4", 4)
 
 	assert.Equal(t, []int{2, 3}, s1.Intersection(s2).Values())
+}
+
+// func (m *SafeOrderedMap[T]) MarshalJSON() ([]byte, error)
+// func (m *SafeOrderedMap[T]) UnmarshalJSON(data []byte) error
+
+func TestSafeOrderedMapMarshalJSON(t *testing.T) {
+	s := New[int]()
+	s.Add("1", 1).Add("2", 2).Add("3", 3)
+
+	b, err := s.MarshalJSON()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, `{"1":1,"2":2,"3":3}`, string(b))
+}
+
+func TestSafeOrderedMapUnmarshalJSON(t *testing.T) {
+	s := New[int]()
+
+	if err := s.UnmarshalJSON([]byte(`{"1":1,"2":2,"3":3}`)); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, v := range s.Values() {
+		assert.Contains(t, s.Values(), v)
+	}
 }

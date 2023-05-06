@@ -196,3 +196,9 @@ func TestSafeSetDropWhile(t *testing.T) {
 	assert.True(t, result.Contains(4))
 	assert.True(t, result.Contains(5))
 }
+
+func TestSafeSetEmpty(t *testing.T) {
+	s := New[int]()
+
+	assert.True(t, s.Empty())
+}
