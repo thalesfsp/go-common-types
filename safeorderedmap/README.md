@@ -1,4 +1,4 @@
-# Safe Ordered Map
+****# Safe Ordered Map
 
 ## Overview
 
@@ -17,8 +17,11 @@ Safe Ordered Map is a thread-safe, ordered map implementation for Go, which main
 | Method | Description                                     | Input                     | Output               |
 |--------|-------------------------------------------------|---------------------------|----------------------|
 | Set    | Sets a value in the map.                        | Key (string), Value (T)    | None                 |
-| Get    | Gets a value from the map.                       | Key (string)              | Value (T) or error   |
+| Get    | Gets a value from the map.                       | Key (string)              | Value (T)   |
+| GetByIndex    | GetByIndex a value from the map based on the index.                       | Index (int)              | Value (T)   |
 | Delete | Deletes a value from the map.                    | Key (string)              | None                 |
+| First | First return the first element of the map.                    | None              | Value (T)                 |
+| Last | Last return the last element of the map.                    | None              | Value (T)                 |
 
 ## Table for the Operations on Keys and Values
 
@@ -95,7 +98,7 @@ func main() {
 
 ## License
 
-See `LICENSE` file for more details.
+See [`LICENSE`](LICENSE) file for more details.
 
 ## Contributing
 

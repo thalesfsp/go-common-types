@@ -62,6 +62,18 @@ func (m *SafeOrderedMap[T]) Get(key string) (T, bool) {
 	return value, ok
 }
 
+// GetByIndex a value from the map based on the index.
+func (m *SafeOrderedMap[T]) GetByIndex(i int) (T, bool) {
+	m.RLock()
+	defer m.RUnlock()
+
+	if i < 0 || i >= len(m.order) {
+		return *new(T), false
+	}
+
+	return m.data[m.order[i]], true
+}
+
 // Delete a value from the map.
 func (m *SafeOrderedMap[T]) Delete(key string) *SafeOrderedMap[T] {
 	m.Lock()
@@ -80,6 +92,30 @@ func (m *SafeOrderedMap[T]) Delete(key string) *SafeOrderedMap[T] {
 	}
 
 	return m
+}
+
+// First return the first element of the map.
+func (m *SafeOrderedMap[T]) First() (string, T, bool) {
+	m.RLock()
+	defer m.RUnlock()
+
+	if len(m.order) == 0 {
+		return "", *new(T), false
+	}
+
+	return m.order[0], m.data[m.order[0]], true
+}
+
+// Last return the last element of the map.
+func (m *SafeOrderedMap[T]) Last() (string, T, bool) {
+	m.RLock()
+	defer m.RUnlock()
+
+	if len(m.order) == 0 {
+		return "", *new(T), false
+	}
+
+	return m.order[len(m.order)-1], m.data[m.order[len(m.order)-1]], true
 }
 
 //////

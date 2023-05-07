@@ -2,8 +2,7 @@
 
 ## Overview
 
-SafeSet is a thread-safe, generic set implementation for Go, which provides safe concurrent access to its elements. It is a generic implementation that accepts values of any `comparable` type. It's a SafeSlice but with unique elements.
-
+SafeSet is a thread-safe, generic set implementation for Go, which provides safe concurrent access to its elements. It is a generic implementation that accepts values of any `comparable` type. ***It's a SafeSlice but with unique elements.***
 
 ## Installation
 
@@ -39,7 +38,7 @@ func main() {
 
 ## License
 
-See `LICENSE` file for more details.
+See [`LICENSE`](LICENSE) file for more details.
 
 ## Contributing
 

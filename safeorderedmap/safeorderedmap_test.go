@@ -293,9 +293,6 @@ func TestSafeOrderedMapIntersection(t *testing.T) {
 	assert.Equal(t, []int{2, 3}, s1.Intersection(s2).Values())
 }
 
-// func (m *SafeOrderedMap[T]) MarshalJSON() ([]byte, error)
-// func (m *SafeOrderedMap[T]) UnmarshalJSON(data []byte) error
-
 func TestSafeOrderedMapMarshalJSON(t *testing.T) {
 	s := New[int]()
 	s.Add("1", 1).Add("2", 2).Add("3", 3)
@@ -318,4 +315,39 @@ func TestSafeOrderedMapUnmarshalJSON(t *testing.T) {
 	for _, v := range s.Values() {
 		assert.Contains(t, s.Values(), v)
 	}
+}
+
+func TestSafeOrderedGetByIndex(t *testing.T) {
+	s := New[int]()
+	s.Add("1", 1).Add("2", 2).Add("3", 3)
+
+	r0, _ := s.GetByIndex(0)
+	r1, _ := s.GetByIndex(1)
+	r2, _ := s.GetByIndex(2)
+
+	assert.Equal(t, 1, r0)
+	assert.Equal(t, 2, r1)
+	assert.Equal(t, 3, r2)
+}
+
+func TestSafeOrderedFirst(t *testing.T) {
+	s := New[int]()
+	s.Add("1", 1).Add("2", 2).Add("3", 3)
+
+	k, v, ok := s.First()
+
+	assert.Equal(t, "1", k)
+	assert.Equal(t, 1, v)
+	assert.True(t, ok)
+}
+
+func TestSafeOrderedLast(t *testing.T) {
+	s := New[int]()
+	s.Add("1", 1).Add("2", 2).Add("3", 3)
+
+	k, v, ok := s.Last()
+
+	assert.Equal(t, "3", k)
+	assert.Equal(t, 3, v)
+	assert.True(t, ok)
 }

@@ -53,7 +53,7 @@ func main() {
 
 ## License
 
-See `LICENSE` file for more details.
+See [`LICENSE`](LICENSE) file for more details.
 
 ## Contributing
 

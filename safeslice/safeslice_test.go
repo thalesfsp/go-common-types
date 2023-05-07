@@ -467,3 +467,39 @@ func TestSafeSliceUnmarshalJSON(t *testing.T) {
 		t.Errorf("Expected %v, got %v", expected, actual)
 	}
 }
+
+func TestSafeSliceFirst(t *testing.T) {
+	s := New[int]()
+
+	s.Add(1)
+	s.Add(2)
+	s.Add(3)
+
+	expected := 1
+	actual, ok := s.First()
+	if !ok {
+		t.Errorf("Expected %v, got %v", expected, actual)
+	}
+
+	if expected != actual {
+		t.Errorf("Expected %v, got %v", expected, actual)
+	}
+}
+
+func TestSafeSliceLast(t *testing.T) {
+	s := New[int]()
+
+	s.Add(1)
+	s.Add(2)
+	s.Add(3)
+
+	expected := 3
+	actual, ok := s.Last()
+	if !ok {
+		t.Errorf("Expected %v, got %v", expected, actual)
+	}
+
+	if expected != actual {
+		t.Errorf("Expected %v, got %v", expected, actual)
+	}
+}

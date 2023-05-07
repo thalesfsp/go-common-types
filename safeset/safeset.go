@@ -54,16 +54,54 @@ func (s *SafeSet[T]) Add(value T) *SafeSet[T] {
 	return s
 }
 
-// Get an element from the set.
-func (s *SafeSet[T]) Get(value T) (T, bool) {
-	return s.data.Get(shared.GenerateHash(value))
+// Get retrieves an element from the slice at the specified index.
+func (s *SafeSet[T]) Get(index int) (T, bool) {
+	s.data.RLock()
+	defer s.data.RUnlock()
+
+	if index < 0 || index >= s.data.Size() {
+		return *new(T), false
+	}
+
+	return s.data.Values()[index], true
 }
 
-// Delete an element from the set.
-func (s *SafeSet[T]) Delete(value T) *SafeSet[T] {
-	s.data.Delete(shared.GenerateHash(value))
+// Delete removes an element from the slice at the specified index.
+func (s *SafeSet[T]) Delete(index int) *SafeSet[T] {
+	s.data.Lock()
+	defer s.data.Unlock()
+
+	if index < 0 || index >= s.data.Size() {
+		return s
+	}
+
+	s.data.Delete(shared.GenerateHash(s.data.Values()[index]))
 
 	return s
+}
+
+// First returns the first element in the set.
+func (s *SafeSet[T]) First() (T, bool) {
+	s.data.RLock()
+	defer s.data.RUnlock()
+
+	if s.data.Empty() {
+		return *new(T), false
+	}
+
+	return s.data.Values()[0], true
+}
+
+// Last returns the last element in the set.
+func (s *SafeSet[T]) Last() (T, bool) {
+	s.data.RLock()
+	defer s.data.RUnlock()
+
+	if s.data.Empty() {
+		return *new(T), false
+	}
+
+	return s.data.Values()[s.data.Size()-1], true
 }
 
 //////

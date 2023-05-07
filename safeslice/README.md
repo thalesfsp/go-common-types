@@ -2,7 +2,7 @@
 
 ## Overview
 
-SafeSlice is a thread-safe, generic slice implementation for Go, which provides safe concurrent access to its elements. It is a generic implementation that accepts values of any type.
+SafeSlice is a thread-safe, generic slice implementation for Go, which provides safe concurrent access to its elements. It is a generic implementation that accepts values of any `comparable` type.
 
 ## Features
 
@@ -18,6 +18,8 @@ SafeSlice is a thread-safe, generic slice implementation for Go, which provides 
 | Add    | Appends a new element to the end of the slice.    | Element | None   |
 | Get    | Retrieves an element from the slice at the index. | Index   | Element|
 | Delete | Removes an element from the slice at the index.   | Index   | None   |
+**| First | First return the first element.   | None   | Element   |
+| Last | Last return the last element.   | None   | Element   |**
 
 ## Table for the Meta Operations
 
@@ -90,7 +92,7 @@ func main() {
 
 ## License
 
-See `LICENSE` file for more details.
+See [`LICENSE`](LICENSE) file for more details.
 
 ## Contributing
 

@@ -17,23 +17,31 @@ func TestSafeSetAdd(t *testing.T) {
 }
 
 func TestSafeSetGet(t *testing.T) {
-	s := New(1, 2, 3)
+	s := New("1", "2", "3")
 
-	value, ok := s.Get(2)
+	value, ok := s.Get(0)
+	assert.Equal(t, "1", value)
 	assert.True(t, ok)
-	assert.Equal(t, 2, value)
 
-	value, ok = s.Get(4)
-	assert.False(t, ok)
-	assert.Equal(t, 0, value) // zero value for int
+	value, ok = s.Get(1)
+	assert.Equal(t, "2", value)
+	assert.True(t, ok)
+
+	value, ok = s.Get(2)
+	assert.Equal(t, "3", value)
+	assert.True(t, ok)
 }
 
 func TestSafeSetDelete(t *testing.T) {
-	s := New(1, 2, 3)
+	s := New("1", "2", "3")
 
-	s.Delete(2)
-	assert.Equal(t, 2, s.Size())
-	assert.False(t, s.Contains(2))
+	s.Delete(0).Delete(1)
+
+	assert.Equal(t, 1, s.Size())
+	assert.False(t, s.Contains("1"))
+	assert.False(t, s.Contains("2"))
+	assert.True(t, s.Contains("3"))
+
 }
 
 func TestSafeSetClone(t *testing.T) {
@@ -201,4 +209,22 @@ func TestSafeSetEmpty(t *testing.T) {
 	s := New[int]()
 
 	assert.True(t, s.Empty())
+}
+
+// First returns the first element in the set.
+func TestSafeSetFirst(t *testing.T) {
+	s := New(1, 2, 3)
+
+	r1, ok := s.First()
+	assert.True(t, ok)
+	assert.Equal(t, 1, r1)
+}
+
+// Last returns the last element in the set.
+func TestSafeSetLast(t *testing.T) {
+	s := New(1, 2, 3)
+
+	r1, ok := s.Last()
+	assert.True(t, ok)
+	assert.Equal(t, 3, r1)
 }

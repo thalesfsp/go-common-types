@@ -70,6 +70,30 @@ func (s *SafeSlice[T]) Delete(index int) *SafeSlice[T] {
 	return s
 }
 
+// First return the first element.
+func (s *SafeSlice[T]) First() (T, bool) {
+	s.RLock()
+	defer s.RUnlock()
+
+	if len(s.data) == 0 {
+		return *new(T), false
+	}
+
+	return s.data[0], true
+}
+
+// Last return the last element.
+func (s *SafeSlice[T]) Last() (T, bool) {
+	s.RLock()
+	defer s.RUnlock()
+
+	if len(s.data) == 0 {
+		return *new(T), false
+	}
+
+	return s.data[len(s.data)-1], true
+}
+
 //////
 // Meta operations.
 
