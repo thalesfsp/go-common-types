@@ -41,7 +41,6 @@ func TestSafeSetDelete(t *testing.T) {
 	assert.False(t, s.Contains("1"))
 	assert.False(t, s.Contains("2"))
 	assert.True(t, s.Contains("3"))
-
 }
 
 func TestSafeSetClone(t *testing.T) {
