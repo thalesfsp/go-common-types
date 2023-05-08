@@ -507,6 +507,10 @@ func (m *SafeOrderedMap[T]) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if m.data == nil {
+		m.data = make(map[string]T)
+	}
+
 	m.order = []string{}
 
 	for key := range temp {

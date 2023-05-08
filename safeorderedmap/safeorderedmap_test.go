@@ -1,6 +1,7 @@
 package safeorderedmap
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -350,4 +351,18 @@ func TestSafeOrderedLast(t *testing.T) {
 	assert.Equal(t, "3", k)
 	assert.Equal(t, 3, v)
 	assert.True(t, ok)
+}
+
+func TestSafeOrderedMapMarshalUnmarshal(t *testing.T) {
+	s := New[int]()
+	s.Add("1", 1).Add("2", 2).Add("3", 3)
+
+	b, err := json.Marshal(s)
+	assert.NoError(t, err)
+
+	var s2 SafeOrderedMap[int]
+	err = json.Unmarshal(b, &s2)
+	assert.NoError(t, err)
+
+	assert.Equal(t, s, &s2)
 }
