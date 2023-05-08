@@ -507,6 +507,11 @@ func (m *SafeOrderedMap[T]) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	// Create a new map if it doesn't exist.
+	if m == nil {
+		m = New[T]()
+	}
+
 	if m.data == nil {
 		m.data = make(map[string]T)
 	}
