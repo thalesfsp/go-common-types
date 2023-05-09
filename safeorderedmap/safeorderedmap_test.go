@@ -365,4 +365,7 @@ func TestSafeOrderedMapMarshalUnmarshal(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, s, &s2)
+
+	n, _ := s2.Get("1")
+	assert.Equal(t, 1, n)
 }
