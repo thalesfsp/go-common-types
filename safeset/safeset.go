@@ -56,9 +56,6 @@ func (s *SafeSet[T]) Add(value T) *SafeSet[T] {
 
 // Get retrieves an element from the slice at the specified index.
 func (s *SafeSet[T]) Get(index int) (T, bool) {
-	s.data.RLock()
-	defer s.data.RUnlock()
-
 	if index < 0 || index >= s.data.Size() {
 		return *new(T), false
 	}
@@ -68,9 +65,6 @@ func (s *SafeSet[T]) Get(index int) (T, bool) {
 
 // Delete removes an element from the slice at the specified index.
 func (s *SafeSet[T]) Delete(index int) *SafeSet[T] {
-	s.data.Lock()
-	defer s.data.Unlock()
-
 	if index < 0 || index >= s.data.Size() {
 		return s
 	}
@@ -134,6 +128,9 @@ func (s *SafeSet[T]) Empty() bool {
 
 // Clone creates a deep copy of the set and returns it.
 func (s *SafeSet[T]) Clone() *SafeSet[T] {
+	s.data.RLock()
+	defer s.data.RUnlock()
+
 	clone := New[T]()
 
 	for _, value := range s.data.Values() {
@@ -160,11 +157,16 @@ func (s *SafeSet[T]) All(predicate func(value T) bool) bool {
 // Map returns a new set containing the results of applying the given function
 // to each element.
 func (s *SafeSet[T]) Map(f func(value T) T) *SafeSet[T] {
+	s.data.RLock()
+	defer s.data.RUnlock()
+
+	newSet := New[T]()
+
 	for _, value := range s.Values() {
-		s.Add(f(value))
+		newSet.Add(f(value))
 	}
 
-	return s
+	return newSet
 }
 
 // Filter returns a new set containing only the elements that satisfy the given

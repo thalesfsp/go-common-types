@@ -155,11 +155,9 @@ func (m *SafeOrderedMap[T]) Contains(key string) bool {
 	m.RLock()
 	defer m.RUnlock()
 
-	if _, ok := m.Get(key); ok {
-		return true
-	}
+	_, ok := m.data[key]
 
-	return false
+	return ok
 }
 
 // Size returns the number of elements in the map.
@@ -531,5 +529,7 @@ func New[T any]() *SafeOrderedMap[T] {
 	return &SafeOrderedMap[T]{
 		data:  make(map[string]T),
 		order: []string{},
+
+		RWMutex: sync.RWMutex{},
 	}
 }

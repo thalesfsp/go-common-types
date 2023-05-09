@@ -35,12 +35,12 @@ func TestSafeSetGet(t *testing.T) {
 func TestSafeSetDelete(t *testing.T) {
 	s := New("1", "2", "3")
 
-	s.Delete(0).Delete(1)
+	s.Delete(2).Delete(1)
 
 	assert.Equal(t, 1, s.Size())
-	assert.False(t, s.Contains("1"))
+	assert.True(t, s.Contains("1"))
 	assert.False(t, s.Contains("2"))
-	assert.True(t, s.Contains("3"))
+	assert.False(t, s.Contains("3"))
 }
 
 func TestSafeSetClone(t *testing.T) {
@@ -55,13 +55,13 @@ func TestSafeSetClone(t *testing.T) {
 
 func TestSafeSetMap(t *testing.T) {
 	s := New(1, 2, 3)
-	s.Map(func(value int) int {
+	s2 := s.Map(func(value int) int {
 		return value * 2
 	})
 
-	assert.True(t, s.Contains(2))
-	assert.True(t, s.Contains(4))
-	assert.True(t, s.Contains(6))
+	assert.True(t, s2.Contains(2))
+	assert.True(t, s2.Contains(4))
+	assert.True(t, s2.Contains(6))
 }
 
 func TestSafeSetFilter(t *testing.T) {

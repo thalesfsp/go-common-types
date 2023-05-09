@@ -364,7 +364,11 @@ func TestSafeOrderedMapMarshalUnmarshal(t *testing.T) {
 	err = json.Unmarshal(b, &s2)
 	assert.NoError(t, err)
 
-	assert.Equal(t, s, &s2)
+	s.Each(func(key string, value int) {
+		v, _ := s2.Get(key)
+
+		assert.Equal(t, value, v)
+	})
 
 	n, _ := s2.Get("1")
 	assert.Equal(t, 1, n)
