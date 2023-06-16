@@ -3,6 +3,8 @@ package safeorderedmap
 import (
 	"encoding/json"
 	"sync"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 //////
@@ -514,6 +516,44 @@ func (m *SafeOrderedMap[T]) UnmarshalJSON(data []byte) error {
 	for key := range temp {
 		m.order = append(m.order, key)
 
+		m.data[key] = temp[key]
+	}
+
+	return nil
+}
+
+// MarshalBSON implements bson.Marshaler interface for SafeOrderedMap.
+func (m *SafeOrderedMap[T]) MarshalBSON() ([]byte, error) {
+	m.RLock()
+	defer m.RUnlock()
+
+	bsonMap := make(map[string]T)
+
+	for _, key := range m.order {
+		bsonMap[key] = m.data[key]
+	}
+
+	return bson.Marshal(bsonMap)
+}
+
+// UnmarshalBSON implements bson.Unmarshaler interface for SafeOrderedMap.
+func (m *SafeOrderedMap[T]) UnmarshalBSON(data []byte) error {
+	m.Lock()
+	defer m.Unlock()
+
+	var temp map[string]T
+	if err := bson.Unmarshal(data, &temp); err != nil {
+		return err
+	}
+
+	if m.data == nil {
+		m.data = make(map[string]T)
+	}
+
+	m.order = []string{}
+
+	for key := range temp {
+		m.order = append(m.order, key)
 		m.data[key] = temp[key]
 	}
 

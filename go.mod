@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/stretchr/testify v1.8.2
+	go.mongodb.org/mongo-driver v1.11.7
 	golang.org/x/exp v0.0.0-20230425010034-47ecfdc1ba53
 )
 
