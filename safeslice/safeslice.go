@@ -111,7 +111,11 @@ func (s *SafeSlice[T]) LastN(n int) *SafeSlice[T] {
 		return nil
 	}
 
-	return New[T](s.data[len(s.data)-n:]...)
+	sl := s.ToSlice()
+
+	x := sl[len(sl)-n:]
+
+	return New[T](x...)
 }
 
 //////

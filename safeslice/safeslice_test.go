@@ -515,8 +515,9 @@ func TestSafeSliceLastN(t *testing.T) {
 
 	actual := s.LastN(2)
 
-	assert.Contains(t, actual, 2)
-	assert.Contains(t, actual, 3)
+	assert.Equal(t, true, actual.Contains(2))
+	assert.Equal(t, true, actual.Contains(3))
+	assert.Equal(t, false, actual.Contains(1))
 }
 
 func TestSafeSliceToSlice(t *testing.T) {
