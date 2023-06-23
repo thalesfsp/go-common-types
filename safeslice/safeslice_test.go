@@ -324,7 +324,7 @@ func TestSafeSliceDifference(t *testing.T) {
 	o.Add(4)
 	o.Add(5)
 
-	expected := "[1 2]"
+	expected := "[4 5]"
 	actual := s.Difference(o).String()
 
 	if expected != actual {

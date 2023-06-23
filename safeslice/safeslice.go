@@ -345,13 +345,13 @@ func (s *SafeSlice[T]) Union(other *SafeSlice[T]) *SafeSlice[T] {
 // Difference returns a new slice containing elements present in the
 // original slice but not in the other slice.
 func (s *SafeSlice[T]) Difference(other *SafeSlice[T]) *SafeSlice[T] {
-	s.RLock()
-	defer s.RUnlock()
+	other.RLock()
+	defer other.RUnlock()
 
 	result := New[T]()
 
-	for _, item := range s.data {
-		if !other.Contains(item) {
+	for _, item := range other.data {
+		if !s.Contains(item) {
 			result.Add(item)
 		}
 	}
