@@ -94,7 +94,7 @@ func (s *SafeSlice[T]) Last() (T, bool) {
 	return s.data[len(s.data)-1], true
 }
 
-// Last return the last element.
+// ToSlice returns the underlying slice.
 func (s *SafeSlice[T]) ToSlice() []T {
 	s.RLock()
 	defer s.RUnlock()
@@ -103,15 +103,15 @@ func (s *SafeSlice[T]) ToSlice() []T {
 }
 
 // LastN return the last N elements as a new slice.
-func (s *SafeSlice[T]) LastN(n int) []T {
+func (s *SafeSlice[T]) LastN(n int) *SafeSlice[T] {
 	s.RLock()
 	defer s.RUnlock()
 
 	if len(s.data) == 0 {
-		return []T{}
+		return nil
 	}
 
-	return s.data[len(s.data)-n:]
+	return New[T](s.data[len(s.data)-n:]...)
 }
 
 //////
