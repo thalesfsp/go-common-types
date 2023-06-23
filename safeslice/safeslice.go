@@ -112,6 +112,9 @@ func (s *SafeSlice[T]) LastN(n int) *SafeSlice[T] {
 	}
 
 	sl := s.ToSlice()
+	if n > len(sl) {
+		n = len(sl) // Return all elements if n is greater than the length of the slice
+	}
 
 	x := sl[len(sl)-n:]
 
