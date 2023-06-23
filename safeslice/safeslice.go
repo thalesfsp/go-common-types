@@ -94,6 +94,26 @@ func (s *SafeSlice[T]) Last() (T, bool) {
 	return s.data[len(s.data)-1], true
 }
 
+// Last return the last element.
+func (s *SafeSlice[T]) ToSlice() []T {
+	s.RLock()
+	defer s.RUnlock()
+
+	return s.data
+}
+
+// LastN return the last N elements as a new slice.
+func (s *SafeSlice[T]) LastN(n int) []T {
+	s.RLock()
+	defer s.RUnlock()
+
+	if len(s.data) == 0 {
+		return []T{}
+	}
+
+	return s.data[len(s.data)-n:]
+}
+
 //////
 // Meta operations.
 

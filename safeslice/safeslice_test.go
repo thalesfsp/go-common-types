@@ -3,6 +3,8 @@ package safeslice
 import (
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 //nolint:goconst
@@ -502,4 +504,31 @@ func TestSafeSliceLast(t *testing.T) {
 	if expected != actual {
 		t.Errorf("Expected %v, got %v", expected, actual)
 	}
+}
+
+func TestSafeSliceLastN(t *testing.T) {
+	s := New[int]()
+
+	s.Add(1)
+	s.Add(2)
+	s.Add(3)
+
+	actual := s.LastN(2)
+
+	assert.Contains(t, actual, 2)
+	assert.Contains(t, actual, 3)
+}
+
+func TestSafeSliceToSlice(t *testing.T) {
+	s := New[int]()
+
+	s.Add(1)
+	s.Add(2)
+	s.Add(3)
+
+	actual := s.ToSlice()
+
+	assert.Contains(t, actual, 1)
+	assert.Contains(t, actual, 2)
+	assert.Contains(t, actual, 3)
 }
