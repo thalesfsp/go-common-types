@@ -344,3 +344,23 @@ func New[T any](v ...T) *SafeSet[T] {
 
 	return set
 }
+
+//////
+// Exported Functionalities.
+//////
+
+// Pluck returns a new slice with the result of applying the given predicate
+// to each element of the slice.
+func Pluck[T, R comparable](s *SafeSet[T], predicate func(T) R) []R {
+	result := []R{}
+
+	for _, item := range s.Values() {
+		r := predicate(item)
+
+		if r != *new(R) {
+			result = append(result, predicate(item))
+		}
+	}
+
+	return result
+}

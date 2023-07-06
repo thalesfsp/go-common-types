@@ -2,6 +2,7 @@ package safeset
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -226,4 +227,24 @@ func TestSafeSetLast(t *testing.T) {
 	r1, ok := s.Last()
 	assert.True(t, ok)
 	assert.Equal(t, 3, r1)
+}
+
+func TestSafeSet_Pluck(t *testing.T) {
+	type A struct {
+		Name      string    `json:"name"`
+		CreatedAt time.Time `json:"created_at"`
+		UpdatedAt time.Time `json:"updated_at"`
+	}
+
+	s := New[A](A{Name: "test1"}, A{Name: "test2"}, A{})
+
+	actual := Pluck(s, func(t A) string {
+		if t.Name != "" {
+			return t.Name
+		}
+
+		return ""
+	})
+
+	assert.Equal(t, []string{"test1", "test2"}, actual)
 }

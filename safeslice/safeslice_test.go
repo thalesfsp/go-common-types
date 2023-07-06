@@ -3,6 +3,7 @@ package safeslice
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -532,4 +533,24 @@ func TestSafeSliceToSlice(t *testing.T) {
 	assert.Contains(t, actual, 1)
 	assert.Contains(t, actual, 2)
 	assert.Contains(t, actual, 3)
+}
+
+func TestSafeSlice_Pluck(t *testing.T) {
+	type A struct {
+		Name      string    `json:"name"`
+		CreatedAt time.Time `json:"created_at"`
+		UpdatedAt time.Time `json:"updated_at"`
+	}
+
+	s := New[A](A{Name: "test1"}, A{Name: "test2"}, A{})
+
+	actual := Pluck(s, func(t A) string {
+		if t.Name != "" {
+			return t.Name
+		}
+
+		return ""
+	})
+
+	assert.Equal(t, []string{"test1", "test2"}, actual)
 }

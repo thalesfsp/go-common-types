@@ -515,3 +515,26 @@ func New[T comparable](v ...T) *SafeSlice[T] {
 		data: v,
 	}
 }
+
+//////
+// Exported Functionalities.
+//////
+
+// Pluck returns a new slice with the result of applying the given predicate
+// to each element of the slice.
+func Pluck[T, R comparable](s *SafeSlice[T], predicate func(T) R) []R {
+	s.RLock()
+	defer s.RUnlock()
+
+	result := []R{}
+
+	for _, item := range s.data {
+		r := predicate(item)
+
+		if r != *new(R) {
+			result = append(result, predicate(item))
+		}
+	}
+
+	return result
+}
