@@ -1,7 +1,7 @@
 package statistical
 
 import (
-	"fmt"
+	"errors"
 	"math"
 	"sort"
 
@@ -38,7 +38,7 @@ func Median[T Numbers](s []T) (T, error) {
 	n := len(s)
 
 	if n == 0 {
-		return *new(T), fmt.Errorf("cannot calculate median of empty slice")
+		return *new(T), errors.New("cannot calculate median of empty slice")
 	}
 
 	sort.Slice(s, func(i, j int) bool { return s[i] < s[j] })
@@ -60,7 +60,7 @@ func Range[T Numbers](s []T) (T, T, error) {
 	n := len(s)
 
 	if n == 0 {
-		return *new(T), *new(T), fmt.Errorf("cannot calculate range of empty slice")
+		return *new(T), *new(T), errors.New("cannot calculate range of empty slice")
 	}
 
 	sort.Slice(s, func(i, j int) bool { return s[i] < s[j] })
@@ -84,7 +84,7 @@ func Variance(s []float64) (float64, error) {
 	n := len(s)
 
 	if n < 2 {
-		return 0, fmt.Errorf("variance requires at least two elements")
+		return 0, errors.New("variance requires at least two elements")
 	}
 
 	mean := Mean(s)
@@ -116,7 +116,7 @@ func Percentile[T Numbers](s []T, p float64) (T, error) {
 	n := len(s)
 
 	if n == 0 {
-		return *new(T), fmt.Errorf("cannot calculate percentile of empty slice")
+		return *new(T), errors.New("cannot calculate percentile of empty slice")
 	}
 
 	sort.Slice(s, func(i, j int) bool { return s[i] < s[j] })

@@ -1,10 +1,10 @@
 module github.com/thalesfsp/go-common-types
 
-go 1.20
+go 1.23.0
 
 require (
 	github.com/stretchr/testify v1.8.4
-	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
+	golang.org/x/exp v0.0.0-20250506013437-ce4c2cf36ca6
 )
 
 require (

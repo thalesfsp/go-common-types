@@ -78,13 +78,13 @@ func TestMedian(t *testing.T) {
 func TestRange(t *testing.T) {
 	s := []float64{1, 2, 3, 4}
 
-	min, max, err := Range(s)
+	minVal, maxVal, err := Range(s)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
 
-	if min != 1 || max != 4 {
-		t.Errorf("Expected range to be (1, 4), got (%v, %v)", min, max)
+	if minVal != 1 || maxVal != 4 {
+		t.Errorf("Expected range to be (1, 4), got (%v, %v)", minVal, maxVal)
 	}
 
 	s = []float64{1}
@@ -228,8 +228,8 @@ func ExampleMedian() {
 
 func ExampleRange() {
 	s := []float64{1, 2, 3, 4, 5}
-	min, max, _ := Range(s)
-	fmt.Printf("Range: (%v, %v)\n", min, max)
+	minVal, maxVal, _ := Range(s)
+	fmt.Printf("Range: (%v, %v)\n", minVal, maxVal)
 	// Output: Range: (1, 5)
 }
 

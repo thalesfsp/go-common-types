@@ -148,9 +148,15 @@ func TestSafeSetMarshalUnmarshalJSON(t *testing.T) {
 
 func TestSafeSetString(t *testing.T) {
 	s := New(1, 2, 3)
-	expected := "[1, 2, 3]"
+	expected := "1,2,3"
 
 	assert.Equal(t, expected, s.String())
+}
+
+func TestSafeSetToSlice(t *testing.T) {
+	s := New(1, 2, 3)
+
+	assert.Equal(t, []int{1, 2, 3}, s.ToSlice())
 }
 
 func TestSafeSetAll(t *testing.T) {

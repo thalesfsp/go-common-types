@@ -337,10 +337,11 @@ func (s *SafeSlice[T]) DropWhile(predicate func(T) bool) *SafeSlice[T] {
 	for _, item := range s.data {
 		if dropping && predicate(item) {
 			continue
-		} else {
-			dropping = false
-			result.Add(item)
 		}
+
+		dropping = false
+
+		result.Add(item)
 	}
 
 	return result

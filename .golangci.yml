@@ -18,6 +18,9 @@ linters:
     - lll
     - interfacebloat
     - goerr113
+    - mnd
+    - testifylint
+    - depguard
   fast: false
 
 # Settings for specific linters
@@ -88,6 +91,7 @@ issues:
         - ifshort
         - maligned
         - maintidx
+        - revive
 
     - path: doc.go
       linters:

@@ -26,22 +26,35 @@ func (s SafeSet[T]) String() string {
 	s.data.RLock()
 	defer s.data.RUnlock()
 
-	// Shoud print only the values. Should use string builder.
-	var sb strings.Builder
+	// Will hold the string representations of the values in the set.
+	var stringSlice []string
 
-	sb.WriteString("[")
+	// Iterate over the values in the set and convert each value to its string
+	// representation.
+	for _, value := range s.data.Values() {
+		stringRepresentation := fmt.Sprintf("%v", value)
 
-	for i, value := range s.data.Values() {
-		sb.WriteString(fmt.Sprintf("%v", value))
-
-		if i < s.data.Size()-1 {
-			sb.WriteString(", ")
+		if stringRepresentation != "" {
+			stringSlice = append(stringSlice, stringRepresentation)
 		}
 	}
 
-	sb.WriteString("]")
+	// Return the joined string slice.
+	return strings.Join(stringSlice, ",")
+}
 
-	return sb.String()
+// ToSlice converts the SafeSet to a slice of its values.
+func (s SafeSet[T]) ToSlice() []T {
+	s.data.RLock()
+	defer s.data.RUnlock()
+
+	// Create a slice to hold the values.
+	values := make([]T, 0, s.data.Size())
+
+	// Iterate over the values in the set and append them to the slice.
+	values = append(values, s.data.Values()...)
+
+	return values
 }
 
 //////
