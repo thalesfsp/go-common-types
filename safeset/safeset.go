@@ -1,6 +1,9 @@
+// Package safeset provides a thread-safe implementation of a Set data structure
+// that preserves the order of elements and is powered by generics.
 package safeset
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -332,13 +335,41 @@ func (s *SafeSet[T]) Intersection(other *SafeSet[T]) *SafeSet[T] {
 //////
 
 // MarshalJSON implements json.Marshaler interface for SafeSet.
+// It marshals the set as a JSON array of its unique values.
 func (s *SafeSet[T]) MarshalJSON() ([]byte, error) {
-	return s.data.MarshalJSON()
+	// Lock for reading to ensure thread safety.
+	s.data.RLock()
+	defer s.data.RUnlock()
+
+	// Convert the set to a slice of its values and marshal that slice.
+	return json.Marshal(s.ToSlice())
 }
 
 // UnmarshalJSON implements json.Unmarshaler interface for SafeSet.
+// It reconstructs the set from a JSON array of values.
 func (s *SafeSet[T]) UnmarshalJSON(data []byte) error {
-	return s.data.UnmarshalJSON(data)
+	// Initialize the data field if it's nil.
+	if s.data == nil {
+		s.data = safeorderedmap.New[T]()
+	}
+
+	// Unmarshal the JSON data into a slice of values.
+	var values []T
+	if err := json.Unmarshal(data, &values); err != nil {
+		return err
+	}
+
+	// Clear the current set (in case it's not empty).
+	s.data = safeorderedmap.New[T]()
+
+	// Add each value from the slice to the set.
+	// This will automatically handle uniqueness since SafeSet only stores
+	// unique values.
+	for _, value := range values {
+		s.Add(value)
+	}
+
+	return nil
 }
 
 //////
