@@ -5,8 +5,8 @@
 PROJECT_FULL_NAME := go-common-types
 
 HAS_GODOC := $(shell command -v godoc;)
-HAS_GOLANGCI := $(shell command -v golangci-lint;)
 HAS_DOCKER_COMPOSE := $(shell command -v docker-compose;)
+GOLANGCI_LINT := go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0
 
 default: ci
 
@@ -21,7 +21,6 @@ coverage:
 
 deps:
 	@go install golang.org/x/tools/cmd/godoc@latest
-	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.51.2
 
 doc:
 ifndef HAS_GODOC
@@ -32,11 +31,8 @@ endif
 	@godoc -http :6060
 
 lint:
-ifndef HAS_GOLANGCI
-	@echo "Could not find golangci-list, installing it and any other missing tool(s)"
-	@make deps
-endif
-	@golangci-lint run -v -c .golangci.yml && echo "Lint OK"
+	@$(GOLANGCI_LINT) fmt --diff -c .golangci.yml
+	@$(GOLANGCI_LINT) run --timeout 1m -v -c .golangci.yml && echo "Lint OK"
 
 test:
 	@go test -timeout 30s -short -v -race -cover -coverprofile=coverage.out ./... && echo "Test OK"

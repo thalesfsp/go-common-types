@@ -242,7 +242,7 @@ func TestSafeSet_Pluck(t *testing.T) {
 		UpdatedAt time.Time `json:"updated_at"`
 	}
 
-	s := New[A](A{Name: "test1"}, A{Name: "test2"}, A{})
+	s := New[A](A{Name: "test1", CreatedAt: time.Time{}, UpdatedAt: time.Time{}}, A{Name: "test2", CreatedAt: time.Time{}, UpdatedAt: time.Time{}}, A{Name: "", CreatedAt: time.Time{}, UpdatedAt: time.Time{}})
 
 	actual := Pluck(s, func(t A) string {
 		if t.Name != "" {

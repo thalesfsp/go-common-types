@@ -4,6 +4,8 @@
 
 Provides common types and type's utilities for Go. Check the README.md of each package for more information.
 
+Requires Go 1.26.11 or newer. Local development and CI use Go 1.27.4.
+
 ## License
 
 See [`LICENSE`](LICENSE) file for more details.

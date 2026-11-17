@@ -5,10 +5,10 @@ package safeset
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"slices"
 	"strings"
-
-	"github.com/thalesfsp/go-common-types/safeorderedmap"
-	"github.com/thalesfsp/go-common-types/shared"
+	"sync"
 )
 
 //////
@@ -17,7 +17,23 @@ import (
 
 // SafeSet is a set that preserves the order of keys powered by generics.
 type SafeSet[T any] struct {
-	data *safeorderedmap.SafeOrderedMap[T]
+	data *setData[T]
+}
+
+// setData is shared by value-receiver methods without copying the mutex.
+type setData[T any] struct {
+	sync.RWMutex
+
+	values []T
+}
+
+// equal uses Go equality when safe, and structural equality for noncomparable values.
+func equal[T any](a, b T) bool {
+	if reflect.ValueOf(a).Comparable() && reflect.ValueOf(b).Comparable() {
+		return any(a) == any(b)
+	}
+
+	return reflect.DeepEqual(a, b)
 }
 
 //////
@@ -26,15 +42,12 @@ type SafeSet[T any] struct {
 
 // String is the stringer implementation.
 func (s SafeSet[T]) String() string {
-	s.data.RLock()
-	defer s.data.RUnlock()
-
 	// Will hold the string representations of the values in the set.
 	var stringSlice []string
 
 	// Iterate over the values in the set and convert each value to its string
 	// representation.
-	for _, value := range s.data.Values() {
+	for _, value := range s.Values() {
 		stringRepresentation := fmt.Sprintf("%v", value)
 
 		if stringRepresentation != "" {
@@ -48,16 +61,7 @@ func (s SafeSet[T]) String() string {
 
 // ToSlice converts the SafeSet to a slice of its values.
 func (s SafeSet[T]) ToSlice() []T {
-	s.data.RLock()
-	defer s.data.RUnlock()
-
-	// Create a slice to hold the values.
-	values := make([]T, 0, s.data.Size())
-
-	// Iterate over the values in the set and append them to the slice.
-	values = append(values, s.data.Values()...)
-
-	return values
+	return s.Values()
 }
 
 //////
@@ -65,41 +69,45 @@ func (s SafeSet[T]) ToSlice() []T {
 
 // Add an element to the set.
 func (s *SafeSet[T]) Add(value T) *SafeSet[T] {
-	s.data.Add(shared.GenerateHash(value), value)
+	s.data.Lock()
+	defer s.data.Unlock()
+
+	if !slices.ContainsFunc(s.data.values, func(current T) bool { return equal(current, value) }) {
+		s.data.values = append(s.data.values, value)
+	}
 
 	return s
 }
 
 // Get retrieves an element from the slice at the specified index.
 func (s *SafeSet[T]) Get(index int) (T, bool) {
-	if index < 0 || index >= s.data.Size() {
+	s.data.RLock()
+	defer s.data.RUnlock()
+
+	if index < 0 || index >= len(s.data.values) {
 		return *new(T), false
 	}
 
-	return s.data.Values()[index], true
+	return s.data.values[index], true
 }
 
 // Delete removes an element from the slice at the specified index.
 func (s *SafeSet[T]) Delete(index int) *SafeSet[T] {
-	if index < 0 || index >= s.data.Size() {
+	s.data.Lock()
+	defer s.data.Unlock()
+
+	if index < 0 || index >= len(s.data.values) {
 		return s
 	}
 
-	s.data.Delete(shared.GenerateHash(s.data.Values()[index]))
+	s.data.values = slices.Delete(s.data.values, index, index+1)
 
 	return s
 }
 
 // First returns the first element in the set.
 func (s *SafeSet[T]) First() (T, bool) {
-	s.data.RLock()
-	defer s.data.RUnlock()
-
-	if s.data.Empty() {
-		return *new(T), false
-	}
-
-	return s.data.Values()[0], true
+	return s.Get(0)
 }
 
 // Last returns the last element in the set.
@@ -107,11 +115,11 @@ func (s *SafeSet[T]) Last() (T, bool) {
 	s.data.RLock()
 	defer s.data.RUnlock()
 
-	if s.data.Empty() {
+	if len(s.data.values) == 0 {
 		return *new(T), false
 	}
 
-	return s.data.Values()[s.data.Size()-1], true
+	return s.data.values[len(s.data.values)-1], true
 }
 
 //////
@@ -119,7 +127,10 @@ func (s *SafeSet[T]) Last() (T, bool) {
 
 // Values returns a list of all values in the set.
 func (s *SafeSet[T]) Values() []T {
-	return s.data.Values()
+	s.data.RLock()
+	defer s.data.RUnlock()
+
+	return slices.Clone(s.data.values)
 }
 
 //////
@@ -127,33 +138,28 @@ func (s *SafeSet[T]) Values() []T {
 
 // Contains checks if the set contains a given element.
 func (s *SafeSet[T]) Contains(value T) bool {
-	_, ok := s.data.Get(shared.GenerateHash(value))
+	s.data.RLock()
+	defer s.data.RUnlock()
 
-	return ok
+	return slices.ContainsFunc(s.data.values, func(current T) bool { return equal(current, value) })
 }
 
 // Size returns the number of elements in the set.
 func (s *SafeSet[T]) Size() int {
-	return s.data.Size()
+	s.data.RLock()
+	defer s.data.RUnlock()
+
+	return len(s.data.values)
 }
 
 // Empty checks if the set is empty and returns a boolean value.
 func (s *SafeSet[T]) Empty() bool {
-	return s.data.Empty()
+	return s.Size() == 0
 }
 
 // Clone creates a deep copy of the set and returns it.
 func (s *SafeSet[T]) Clone() *SafeSet[T] {
-	s.data.RLock()
-	defer s.data.RUnlock()
-
-	clone := New[T]()
-
-	for _, value := range s.data.Values() {
-		clone.Add(value)
-	}
-
-	return clone
+	return New[T](s.Values()...)
 }
 
 //////
@@ -173,9 +179,6 @@ func (s *SafeSet[T]) All(predicate func(value T) bool) bool {
 // Map returns a new set containing the results of applying the given function
 // to each element.
 func (s *SafeSet[T]) Map(f func(value T) T) *SafeSet[T] {
-	s.data.RLock()
-	defer s.data.RUnlock()
-
 	newSet := New[T]()
 
 	for _, value := range s.Values() {
@@ -233,13 +236,7 @@ func (s *SafeSet[T]) Find(predicate func(value T) bool) (T, bool) {
 
 // Any returns true if any element in the set satisfies the given predicate.
 func (s *SafeSet[T]) Any(predicate func(value T) bool) bool {
-	for _, value := range s.Values() {
-		if predicate(value) {
-			return true
-		}
-	}
-
-	return false
+	return slices.ContainsFunc(s.Values(), predicate)
 }
 
 // TakeWhile returns a new set containing the first n elements that satisfy the
@@ -279,6 +276,10 @@ func (s *SafeSet[T]) DropWhile(predicate func(value T) bool) *SafeSet[T] {
 
 // Union returns a new set containing all unique elements from both sets.
 func (s *SafeSet[T]) Union(other *SafeSet[T]) *SafeSet[T] {
+	if s.data == other.data {
+		return s.Clone()
+	}
+
 	result := s.Clone()
 
 	for _, value := range other.Values() {
@@ -291,6 +292,9 @@ func (s *SafeSet[T]) Union(other *SafeSet[T]) *SafeSet[T] {
 // Difference returns a new set containing elements present in the original set but not in the other set.
 func (s *SafeSet[T]) Difference(other *SafeSet[T]) *SafeSet[T] {
 	result := New[T]()
+	if s.data == other.data {
+		return result
+	}
 
 	for _, value := range s.Values() {
 		if !other.Contains(value) {
@@ -303,6 +307,10 @@ func (s *SafeSet[T]) Difference(other *SafeSet[T]) *SafeSet[T] {
 
 // Subset checks if all elements of the original set are present in the other set.
 func (s *SafeSet[T]) Subset(other *SafeSet[T]) bool {
+	if s.data == other.data {
+		return true
+	}
+
 	for _, value := range s.Values() {
 		if !other.Contains(value) {
 			return false
@@ -319,6 +327,10 @@ func (s *SafeSet[T]) Superset(other *SafeSet[T]) bool {
 
 // Intersection returns a new set containing elements present in both sets.
 func (s *SafeSet[T]) Intersection(other *SafeSet[T]) *SafeSet[T] {
+	if s.data == other.data {
+		return s.Clone()
+	}
+
 	result := New[T]()
 
 	for _, value := range s.Values() {
@@ -337,37 +349,30 @@ func (s *SafeSet[T]) Intersection(other *SafeSet[T]) *SafeSet[T] {
 // MarshalJSON implements json.Marshaler interface for SafeSet.
 // It marshals the set as a JSON array of its unique values.
 func (s *SafeSet[T]) MarshalJSON() ([]byte, error) {
-	// Lock for reading to ensure thread safety.
-	s.data.RLock()
-	defer s.data.RUnlock()
-
-	// Convert the set to a slice of its values and marshal that slice.
-	return json.Marshal(s.ToSlice())
+	return json.Marshal(s.Values())
 }
 
 // UnmarshalJSON implements json.Unmarshaler interface for SafeSet.
 // It reconstructs the set from a JSON array of values.
 func (s *SafeSet[T]) UnmarshalJSON(data []byte) error {
-	// Initialize the data field if it's nil.
-	if s.data == nil {
-		s.data = safeorderedmap.New[T]()
-	}
-
-	// Unmarshal the JSON data into a slice of values.
 	var values []T
-	if err := json.Unmarshal(data, &values); err != nil {
+
+	err := json.Unmarshal(data, &values)
+	if err != nil {
 		return err
 	}
 
-	// Clear the current set (in case it's not empty).
-	s.data = safeorderedmap.New[T]()
+	decoded := New[T](values...)
+	if s.data == nil {
+		s.data = decoded.data
 
-	// Add each value from the slice to the set.
-	// This will automatically handle uniqueness since SafeSet only stores
-	// unique values.
-	for _, value := range values {
-		s.Add(value)
+		return nil
 	}
+
+	s.data.Lock()
+	defer s.data.Unlock()
+
+	s.data.values = decoded.data.values
 
 	return nil
 }
@@ -378,10 +383,7 @@ func (s *SafeSet[T]) UnmarshalJSON(data []byte) error {
 
 // New creates a new SafeSet.
 func New[T any](v ...T) *SafeSet[T] {
-	set := &SafeSet[T]{
-		data: safeorderedmap.New[T](),
-	}
-
+	set := &SafeSet[T]{data: &setData[T]{RWMutex: sync.RWMutex{}, values: make([]T, 0, len(v))}}
 	for _, value := range v {
 		set.Add(value)
 	}

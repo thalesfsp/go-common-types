@@ -443,6 +443,7 @@ func TestSafeSliceMarshalJSON(t *testing.T) {
 	s.Add(3)
 
 	expected := "[1,2,3]"
+
 	actual, err := s.MarshalJSON()
 	if err != nil {
 		t.Errorf("Expected %v, got %v", expected, actual)
@@ -457,6 +458,7 @@ func TestSafeSliceUnmarshalJSON(t *testing.T) {
 	s := New[int]()
 
 	expected := "[1, 2, 3]"
+
 	err := s.UnmarshalJSON([]byte(expected))
 	if err != nil {
 		t.Errorf("Expected %v, got %v", expected, err)
@@ -479,6 +481,7 @@ func TestSafeSliceFirst(t *testing.T) {
 	s.Add(3)
 
 	expected := 1
+
 	actual, ok := s.First()
 	if !ok {
 		t.Errorf("Expected %v, got %v", expected, actual)
@@ -497,6 +500,7 @@ func TestSafeSliceLast(t *testing.T) {
 	s.Add(3)
 
 	expected := 3
+
 	actual, ok := s.Last()
 	if !ok {
 		t.Errorf("Expected %v, got %v", expected, actual)
@@ -542,7 +546,7 @@ func TestSafeSlice_Pluck(t *testing.T) {
 		UpdatedAt time.Time `json:"updated_at"`
 	}
 
-	s := New[A](A{Name: "test1"}, A{Name: "test2"}, A{})
+	s := New[A](A{Name: "test1", CreatedAt: time.Time{}, UpdatedAt: time.Time{}}, A{Name: "test2", CreatedAt: time.Time{}, UpdatedAt: time.Time{}}, A{Name: "", CreatedAt: time.Time{}, UpdatedAt: time.Time{}})
 
 	actual := Pluck(s, func(t A) string {
 		if t.Name != "" {
