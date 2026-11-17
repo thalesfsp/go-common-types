@@ -3,7 +3,7 @@ package statistical
 import (
 	"errors"
 	"math"
-	"sort"
+	"slices"
 
 	"golang.org/x/exp/constraints"
 )
@@ -41,7 +41,7 @@ func Median[T Numbers](s []T) (T, error) {
 		return *new(T), errors.New("cannot calculate median of empty slice")
 	}
 
-	sort.Slice(s, func(i, j int) bool { return s[i] < s[j] })
+	slices.Sort(s)
 
 	if n%2 == 0 {
 		i := n / 2
@@ -63,7 +63,7 @@ func Range[T Numbers](s []T) (T, T, error) {
 		return *new(T), *new(T), errors.New("cannot calculate range of empty slice")
 	}
 
-	sort.Slice(s, func(i, j int) bool { return s[i] < s[j] })
+	slices.Sort(s)
 
 	return s[0], s[n-1], nil
 }
@@ -111,15 +111,19 @@ func StandardDeviation(s []float64) (float64, error) {
 }
 
 // Percentile calculates the percentile value of a slice of numbers for a given
-// percentage (between 0 and 100).
+// fraction (between 0 and 1, inclusive).
 func Percentile[T Numbers](s []T, p float64) (T, error) {
+	if math.IsNaN(p) || p < 0 || p > 1 {
+		return *new(T), errors.New("percentile fraction must be between 0 and 1")
+	}
+
 	n := len(s)
 
 	if n == 0 {
 		return *new(T), errors.New("cannot calculate percentile of empty slice")
 	}
 
-	sort.Slice(s, func(i, j int) bool { return s[i] < s[j] })
+	slices.Sort(s)
 
 	rank := float64(n-1) * p
 

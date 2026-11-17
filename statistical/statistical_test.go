@@ -70,7 +70,8 @@ func TestMedian(t *testing.T) {
 
 	s = []float64{}
 
-	if _, err = Median(s); err == nil {
+	_, err = Median(s)
+	if err == nil {
 		t.Errorf("Expected error calculating median of empty slice")
 	}
 }
@@ -89,13 +90,15 @@ func TestRange(t *testing.T) {
 
 	s = []float64{1}
 
-	if _, _, err = Range(s); err != nil {
+	_, _, err = Range(s)
+	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
 
 	s = []float64{}
 
-	if _, _, err = Range(s); err == nil {
+	_, _, err = Range(s)
+	if err == nil {
 		t.Errorf("Expected error calculating range of empty slice")
 	}
 }

@@ -4,6 +4,10 @@
 
 SafeSlice is a thread-safe, generic slice implementation for Go, which provides safe concurrent access to its elements. It is a generic implementation that accepts values of any `comparable` type.
 
+Callbacks run on a snapshot without holding the slice lock. `LastN` owns a copy
+of its elements. `ToSlice` retains its existing borrowed-view behavior; callers
+must synchronize access to that returned view when the slice may be modified.
+
 ## Features
 
 - **Thread-safe**: Safe concurrent access with read-write mutexes for synchronization.

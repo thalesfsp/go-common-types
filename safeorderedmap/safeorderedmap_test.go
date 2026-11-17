@@ -159,6 +159,7 @@ func TestSafeOrderedMapEach(t *testing.T) {
 	s.Add("1", 1).Add("2", 2).Add("3", 3)
 
 	var sum int
+
 	s.Each(func(key string, value int) {
 		sum += value
 	})
@@ -180,6 +181,7 @@ func TestSafeOrderedMap_Reduce(t *testing.T) {
 
 	// Test that reduce works when the map is empty.
 	somEmpty := New[int]()
+
 	accumEmpty := somEmpty.Reduce(func(acc int, key string, value int) int {
 		return acc + value
 	}, 0)
@@ -308,14 +310,16 @@ func TestSafeOrderedMapMarshalJSON(t *testing.T) {
 
 func TestSafeOrderedMapUnmarshalJSON(t *testing.T) {
 	s := New[int]()
+	s.Add("stale", 99)
 
-	if err := s.UnmarshalJSON([]byte(`{"1":1,"2":2,"3":3}`)); err != nil {
+	err := s.UnmarshalJSON([]byte(`{"1":1,"2":2,"3":3}`))
+	if err != nil {
 		t.Fatal(err)
 	}
 
-	for _, v := range s.Values() {
-		assert.Contains(t, s.Values(), v)
-	}
+	assert.ElementsMatch(t, []int{1, 2, 3}, s.Values())
+	assert.Equal(t, 3, s.Size())
+	assert.False(t, s.Contains("stale"))
 }
 
 func TestSafeOrderedGetByIndex(t *testing.T) {
@@ -361,6 +365,7 @@ func TestSafeOrderedMapMarshalUnmarshal(t *testing.T) {
 	assert.NoError(t, err)
 
 	var s2 SafeOrderedMap[int]
+
 	err = json.Unmarshal(b, &s2)
 	assert.NoError(t, err)
 

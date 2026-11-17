@@ -4,6 +4,10 @@
 
 Safe Ordered Map is a thread-safe, ordered map implementation for Go, which maintains the insertion order while providing safe concurrent access. It is a generic implementation that accepts keys as strings and values of any type.
 
+Callbacks run on an insertion-ordered snapshot without holding the map lock.
+Binary operations snapshot each input independently and never hold two map locks.
+BSON methods encode and decode actual BSON documents, preserving insertion order.
+
 ## Features
 
 - **Thread-safe**: Safe concurrent access with read-write mutexes for synchronization.

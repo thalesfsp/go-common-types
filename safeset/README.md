@@ -4,6 +4,13 @@
 
 SafeSet is a thread-safe, generic set implementation for Go, which provides safe concurrent access to its elements. It is a generic implementation that accepts values of any `comparable` type. ***It's a SafeSlice but with unique elements.***
 
+Use `New` before concurrent access. Equality uses Go `==` for comparable values
+(including pointer identity and dynamic interface types), and `reflect.DeepEqual`
+for noncomparable values. Formatting methods do not define identity. Nil and empty
+slices are distinct. Membership and insertion scan the ordered values in O(n) time.
+The container protects its own storage; callers must synchronize mutations of
+referenced elements. Callbacks run on a snapshot without holding collection locks.
+
 ## Installation
 
 Use `go get` to add the `safeset` package to your project:

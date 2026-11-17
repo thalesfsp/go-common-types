@@ -5,6 +5,7 @@ package safeslice
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 	"sync"
 )
 
@@ -25,10 +26,7 @@ type SafeSlice[T comparable] struct {
 
 // String is the stringer implementation.
 func (s *SafeSlice[T]) String() string {
-	s.RLock()
-	defer s.RUnlock()
-
-	return fmt.Sprintf("%v", s.data)
+	return fmt.Sprintf("%v", s.snapshot())
 }
 
 //////
@@ -111,14 +109,14 @@ func (s *SafeSlice[T]) LastN(n int) *SafeSlice[T] {
 		return nil
 	}
 
-	sl := s.ToSlice()
-	if n > len(sl) {
-		n = len(sl) // Return all elements if n is greater than the length of the slice
+	if n > len(s.data) {
+		n = len(s.data)
 	}
 
-	x := sl[len(sl)-n:]
+	tail := make([]T, n)
+	copy(tail, s.data[len(s.data)-n:])
 
-	return New[T](x...)
+	return New[T](tail...)
 }
 
 //////
@@ -129,13 +127,7 @@ func (s *SafeSlice[T]) Contains(item T) bool {
 	s.RLock()
 	defer s.RUnlock()
 
-	for _, value := range s.data {
-		if value == item {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(s.data, item)
 }
 
 // Size returns the number of elements in the slice.
@@ -156,16 +148,15 @@ func (s *SafeSlice[T]) Empty() bool {
 
 // Clone returns a new copy of the slice.
 func (s *SafeSlice[T]) Clone() *SafeSlice[T] {
+	return New[T](s.snapshot()...)
+}
+
+// snapshot copies container storage before invoking caller code or another collection.
+func (s *SafeSlice[T]) snapshot() []T {
 	s.RLock()
 	defer s.RUnlock()
 
-	clone := New[T]()
-
-	for _, item := range s.data {
-		clone.Add(item)
-	}
-
-	return clone
+	return slices.Clone(s.data)
 }
 
 // Index returns the index of the first occurrence of the given element in the slice.
@@ -208,10 +199,7 @@ func (s *SafeSlice[T]) Unique() *SafeSlice[T] {
 
 // All checks if all elements in the slice satisfy a given condition (predicate) and returns a boolean value.
 func (s *SafeSlice[T]) All(predicate func(T) bool) bool {
-	s.RLock()
-	defer s.RUnlock()
-
-	for _, item := range s.data {
+	for _, item := range s.snapshot() {
 		if !predicate(item) {
 			return false
 		}
@@ -222,12 +210,9 @@ func (s *SafeSlice[T]) All(predicate func(T) bool) bool {
 
 // Map applies a given function to all elements in the slice and creates a new slice containing the results.
 func (s *SafeSlice[T]) Map(mapper func(T) T) *SafeSlice[T] {
-	s.RLock()
-	defer s.RUnlock()
-
 	result := New[T]()
 
-	for _, item := range s.data {
+	for _, item := range s.snapshot() {
 		result.Add(mapper(item))
 	}
 
@@ -236,12 +221,9 @@ func (s *SafeSlice[T]) Map(mapper func(T) T) *SafeSlice[T] {
 
 // Filter creates a new slice containing only the elements that satisfy a given condition (predicate).
 func (s *SafeSlice[T]) Filter(predicate func(T) bool) *SafeSlice[T] {
-	s.RLock()
-	defer s.RUnlock()
-
 	result := New[T]()
 
-	for _, item := range s.data {
+	for _, item := range s.snapshot() {
 		if predicate(item) {
 			result.Add(item)
 		}
@@ -252,10 +234,7 @@ func (s *SafeSlice[T]) Filter(predicate func(T) bool) *SafeSlice[T] {
 
 // Each iterates over the slice and calls the given function for each element.
 func (s *SafeSlice[T]) Each(f func(T)) *SafeSlice[T] {
-	s.RLock()
-	defer s.RUnlock()
-
-	for _, item := range s.data {
+	for _, item := range s.snapshot() {
 		f(item)
 	}
 
@@ -264,12 +243,9 @@ func (s *SafeSlice[T]) Each(f func(T)) *SafeSlice[T] {
 
 // Reduce applies a given function to all elements in the slice and returns a single result.
 func (s *SafeSlice[T]) Reduce(reducer func(T, T) T, initialValue T) T {
-	s.RLock()
-	defer s.RUnlock()
-
 	result := initialValue
 
-	for _, item := range s.data {
+	for _, item := range s.snapshot() {
 		result = reducer(result, item)
 	}
 
@@ -279,10 +255,7 @@ func (s *SafeSlice[T]) Reduce(reducer func(T, T) T, initialValue T) T {
 // Find returns the first element in the slice that satisfies the given predicate.
 // If no element satisfies the predicate, it returns the zero value of the type.
 func (s *SafeSlice[T]) Find(predicate func(T) bool) T {
-	s.RLock()
-	defer s.RUnlock()
-
-	for _, item := range s.data {
+	for _, item := range s.snapshot() {
 		if predicate(item) {
 			return item
 		}
@@ -293,27 +266,15 @@ func (s *SafeSlice[T]) Find(predicate func(T) bool) T {
 
 // Any checks if at least one element in the slice satisfies a given condition (predicate).
 func (s *SafeSlice[T]) Any(predicate func(T) bool) bool {
-	s.RLock()
-	defer s.RUnlock()
-
-	for _, item := range s.data {
-		if predicate(item) {
-			return true
-		}
-	}
-
-	return false
+	return slices.ContainsFunc(s.snapshot(), predicate)
 }
 
 // TakeWhile creates a new slice containing elements from the original slice
 // until the predicate function returns false.
 func (s *SafeSlice[T]) TakeWhile(predicate func(T) bool) *SafeSlice[T] {
-	s.RLock()
-	defer s.RUnlock()
-
 	result := New[T]()
 
-	for _, item := range s.data {
+	for _, item := range s.snapshot() {
 		if predicate(item) {
 			result.Add(item)
 		} else {
@@ -327,14 +288,11 @@ func (s *SafeSlice[T]) TakeWhile(predicate func(T) bool) *SafeSlice[T] {
 // DropWhile creates a new slice without the elements from the original slice
 // until the predicate function returns false.
 func (s *SafeSlice[T]) DropWhile(predicate func(T) bool) *SafeSlice[T] {
-	s.RLock()
-	defer s.RUnlock()
-
 	result := New[T]()
 
 	dropping := true
 
-	for _, item := range s.data {
+	for _, item := range s.snapshot() {
 		if dropping && predicate(item) {
 			continue
 		}
@@ -352,16 +310,12 @@ func (s *SafeSlice[T]) DropWhile(predicate func(T) bool) *SafeSlice[T] {
 
 // Union returns a new slice containing all unique elements from both slices.
 func (s *SafeSlice[T]) Union(other *SafeSlice[T]) *SafeSlice[T] {
-	s.RLock()
-	defer s.RUnlock()
-
-	result := New[T]()
-
-	for _, item := range s.data {
-		result.Add(item)
+	result := s.Clone()
+	if s == other {
+		return result
 	}
 
-	for _, item := range other.data {
+	for _, item := range other.snapshot() {
 		if !result.Contains(item) {
 			result.Add(item)
 		}
@@ -373,13 +327,14 @@ func (s *SafeSlice[T]) Union(other *SafeSlice[T]) *SafeSlice[T] {
 // Difference returns a new slice containing elements present in the
 // original slice but not in the other slice.
 func (s *SafeSlice[T]) Difference(other *SafeSlice[T]) *SafeSlice[T] {
-	other.RLock()
-	defer other.RUnlock()
-
 	result := New[T]()
+	if s == other {
+		return result
+	}
 
-	for _, item := range other.data {
-		if !s.Contains(item) {
+	compared := s.Clone()
+	for _, item := range other.snapshot() {
+		if !compared.Contains(item) {
 			result.Add(item)
 		}
 	}
@@ -389,11 +344,13 @@ func (s *SafeSlice[T]) Difference(other *SafeSlice[T]) *SafeSlice[T] {
 
 // Subset checks if all elements in the slice are present in the other slice.
 func (s *SafeSlice[T]) Subset(other *SafeSlice[T]) bool {
-	s.RLock()
-	defer s.RUnlock()
+	if s == other {
+		return true
+	}
 
-	for _, item := range s.data {
-		if !other.Contains(item) {
+	compared := other.Clone()
+	for _, item := range s.snapshot() {
+		if !compared.Contains(item) {
 			return false
 		}
 	}
@@ -408,13 +365,15 @@ func (s *SafeSlice[T]) Superset(other *SafeSlice[T]) bool {
 
 // Intersection returns a new slice containing elements present in both slices.
 func (s *SafeSlice[T]) Intersection(other *SafeSlice[T]) *SafeSlice[T] {
-	s.RLock()
-	defer s.RUnlock()
+	if s == other {
+		return s.Clone()
+	}
 
 	result := New[T]()
 
-	for _, item := range s.data {
-		if other.Contains(item) {
+	compared := other.Clone()
+	for _, item := range s.snapshot() {
+		if compared.Contains(item) {
 			result.Add(item)
 		}
 	}
@@ -443,15 +402,14 @@ func (s *SafeSlice[T]) Frequency() map[T]int {
 // element(s) that appears the most frequently. If all elements appear with the
 // same frequency, it returns a slice with all elements.
 func (s *SafeSlice[T]) Mode() []T {
-	s.RLock()
-	defer s.RUnlock()
+	data := s.snapshot()
 
-	if s.Empty() {
+	if len(data) == 0 {
 		return nil
 	}
 
 	freqMap := make(map[T]int)
-	for _, item := range s.data {
+	for _, item := range data {
 		freqMap[item]++
 	}
 
@@ -463,7 +421,7 @@ func (s *SafeSlice[T]) Mode() []T {
 	}
 
 	if maxFreq == 1 {
-		uniqueSlice := s.Unique()
+		uniqueSlice := New[T](data...).Unique()
 
 		return uniqueSlice.data
 	}
@@ -485,21 +443,20 @@ func (s *SafeSlice[T]) Mode() []T {
 
 // MarshalJSON marshals the slice to JSON.
 func (s *SafeSlice[T]) MarshalJSON() ([]byte, error) {
-	s.RLock()
-	defer s.RUnlock()
-
-	return json.Marshal(s.data)
+	return json.Marshal(s.snapshot())
 }
 
 // UnmarshalJSON unmarshals the slice from JSON.
 func (s *SafeSlice[T]) UnmarshalJSON(data []byte) error {
-	s.Lock()
-	defer s.Unlock()
-
 	var temp []T
-	if err := json.Unmarshal(data, &temp); err != nil {
+
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
 		return err
 	}
+
+	s.Lock()
+	defer s.Unlock()
 
 	s.data = temp
 
@@ -513,7 +470,8 @@ func (s *SafeSlice[T]) UnmarshalJSON(data []byte) error {
 // New creates a new Safe Slice.
 func New[T comparable](v ...T) *SafeSlice[T] {
 	return &SafeSlice[T]{
-		data: v,
+		data:    v,
+		RWMutex: sync.RWMutex{},
 	}
 }
 
@@ -524,12 +482,9 @@ func New[T comparable](v ...T) *SafeSlice[T] {
 // Pluck returns a new slice with the result of applying the given predicate
 // to each element of the slice.
 func Pluck[T, R comparable](s *SafeSlice[T], predicate func(T) R) []R {
-	s.RLock()
-	defer s.RUnlock()
-
 	result := []R{}
 
-	for _, item := range s.data {
+	for _, item := range s.snapshot() {
 		r := predicate(item)
 
 		if r != *new(R) {

@@ -1,8 +1,12 @@
 package safeorderedmap
 
 import (
+	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"sync"
+
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 //////
@@ -24,15 +28,12 @@ type SafeOrderedMap[T any] struct {
 
 // String is the stringer implementation.
 func (m *SafeOrderedMap[T]) String() string {
-	m.RLock()
-	defer m.RUnlock()
-
-	json, err := json.Marshal(m.data)
+	data, err := m.MarshalJSON()
 	if err != nil {
 		return ""
 	}
 
-	return string(json)
+	return string(data)
 }
 
 //////
@@ -214,11 +215,10 @@ func (m *SafeOrderedMap[T]) Index(key string) (int, T, bool) {
 // the condition, and false otherwise. The All method stops processing as soon
 // as it finds an element that does not satisfy the condition.
 func (m *SafeOrderedMap[T]) All(predicate func(key string, value T) bool) bool {
-	m.RLock()
-	defer m.RUnlock()
+	snapshot := m.Clone()
 
-	for _, key := range m.order {
-		if !predicate(key, m.data[key]) {
+	for _, key := range snapshot.order {
+		if !predicate(key, snapshot.data[key]) {
 			return false
 		}
 	}
@@ -233,13 +233,12 @@ func (m *SafeOrderedMap[T]) All(predicate func(key string, value T) bool) bool {
 // a new map containing the results. The original map remains unchanged. The new
 // map maintains the insertion order of the original map.
 func (m *SafeOrderedMap[T]) Map(f func(key string, value T) T) *SafeOrderedMap[T] {
-	m.RLock()
-	defer m.RUnlock()
+	snapshot := m.Clone()
 
 	newMap := New[T]()
 
-	for _, key := range m.order {
-		newMap.Add(key, f(key, m.data[key]))
+	for _, key := range snapshot.order {
+		newMap.Add(key, f(key, snapshot.data[key]))
 	}
 
 	return newMap
@@ -252,14 +251,13 @@ func (m *SafeOrderedMap[T]) Map(f func(key string, value T) T) *SafeOrderedMap[T
 // given condition (predicate). The original map remains unchanged. The new map
 // maintains the insertion order of the original map.
 func (m *SafeOrderedMap[T]) Filter(predicate func(key string, value T) bool) *SafeOrderedMap[T] {
-	m.RLock()
-	defer m.RUnlock()
+	snapshot := m.Clone()
 
 	filteredMap := New[T]()
 
-	for _, key := range m.order {
-		if predicate(key, m.data[key]) {
-			filteredMap.Add(key, m.data[key])
+	for _, key := range snapshot.order {
+		if predicate(key, snapshot.data[key]) {
+			filteredMap.Add(key, snapshot.data[key])
 		}
 	}
 
@@ -274,11 +272,10 @@ func (m *SafeOrderedMap[T]) Filter(predicate func(key string, value T) bool) *Sa
 // printing or modifying the elements. However, the Each method itself does not
 // return any result.
 func (m *SafeOrderedMap[T]) Each(f func(key string, value T)) *SafeOrderedMap[T] {
-	m.RLock()
-	defer m.RUnlock()
+	snapshot := m.Clone()
 
-	for _, key := range m.order {
-		f(key, m.data[key])
+	for _, key := range snapshot.order {
+		f(key, snapshot.data[key])
 	}
 
 	return m
@@ -293,13 +290,12 @@ func (m *SafeOrderedMap[T]) Each(f func(key string, value T)) *SafeOrderedMap[T]
 // on, until all elements in the map have been processed. The final result is a
 // single accumulated value.
 func (m *SafeOrderedMap[T]) Reduce(reducer func(accum T, key string, value T) T, initial T) T {
-	m.RLock()
-	defer m.RUnlock()
+	snapshot := m.Clone()
 
 	accum := initial
 
-	for _, key := range m.order {
-		accum = reducer(accum, key, m.data[key])
+	for _, key := range snapshot.order {
+		accum = reducer(accum, key, snapshot.data[key])
 	}
 
 	return accum
@@ -314,12 +310,11 @@ func (m *SafeOrderedMap[T]) Reduce(reducer func(accum T, key string, value T) T,
 // satisfies the predicate, it returns a zero value for the type, an empty
 // string for the key, and false for the boolean value.
 func (m *SafeOrderedMap[T]) Find(predicate func(key string, value T) bool) (string, T, bool) {
-	m.RLock()
-	defer m.RUnlock()
+	snapshot := m.Clone()
 
-	for _, key := range m.order {
-		if predicate(key, m.data[key]) {
-			return key, m.data[key], true
+	for _, key := range snapshot.order {
+		if predicate(key, snapshot.data[key]) {
+			return key, snapshot.data[key], true
 		}
 	}
 
@@ -333,11 +328,10 @@ func (m *SafeOrderedMap[T]) Find(predicate func(key string, value T) bool) (stri
 // element satisfies the predicate, it returns true. If no element satisfies the
 // predicate, it returns false.
 func (m *SafeOrderedMap[T]) Any(predicate func(key string, value T) bool) bool {
-	m.RLock()
-	defer m.RUnlock()
+	snapshot := m.Clone()
 
-	for _, key := range m.order {
-		if predicate(key, m.data[key]) {
+	for _, key := range snapshot.order {
+		if predicate(key, snapshot.data[key]) {
 			return true
 		}
 	}
@@ -354,14 +348,13 @@ func (m *SafeOrderedMap[T]) Any(predicate func(key string, value T) bool) bool {
 // predicate, it is added to the resulting map. The process stops once an
 // element that does not satisfy the predicate is encountered.
 func (m *SafeOrderedMap[T]) TakeWhile(predicate func(key string, value T) bool) *SafeOrderedMap[T] {
-	m.RLock()
-	defer m.RUnlock()
+	snapshot := m.Clone()
 
 	newMap := New[T]()
 
-	for _, key := range m.order {
-		if predicate(key, m.data[key]) {
-			newMap.Add(key, m.data[key])
+	for _, key := range snapshot.order {
+		if predicate(key, snapshot.data[key]) {
+			newMap.Add(key, snapshot.data[key])
 		} else {
 			break
 		}
@@ -380,19 +373,18 @@ func (m *SafeOrderedMap[T]) TakeWhile(predicate func(key string, value T) bool) 
 // to the resulting map once an element that does not satisfy the predicate is
 // encountered.
 func (m *SafeOrderedMap[T]) DropWhile(predicate func(key string, value T) bool) *SafeOrderedMap[T] {
-	m.RLock()
-	defer m.RUnlock()
+	snapshot := m.Clone()
 
 	newMap := New[T]()
 
 	dropping := true
-	for _, key := range m.order {
-		if dropping && !predicate(key, m.data[key]) {
+	for _, key := range snapshot.order {
+		if dropping && !predicate(key, snapshot.data[key]) {
 			dropping = false
 		}
 
 		if !dropping {
-			newMap.Add(key, m.data[key])
+			newMap.Add(key, snapshot.data[key])
 		}
 	}
 
@@ -406,17 +398,15 @@ func (m *SafeOrderedMap[T]) DropWhile(predicate func(key string, value T) bool) 
 // maps. The order of elements in the resulting map will be based on the order
 // of elements in the original maps.
 func (m *SafeOrderedMap[T]) Union(other *SafeOrderedMap[T]) *SafeOrderedMap[T] {
-	m.RLock()
-	defer m.RUnlock()
-
-	result := New[T]()
-	for _, key := range m.order {
-		result.Add(key, m.data[key])
+	result := m.Clone()
+	if m == other {
+		return result
 	}
 
-	for _, key := range other.order {
-		if _, ok := m.data[key]; !ok {
-			result.Add(key, other.data[key])
+	snapshot := other.Clone()
+	for _, key := range snapshot.order {
+		if !result.Contains(key) {
+			result.Add(key, snapshot.data[key])
 		}
 	}
 
@@ -426,14 +416,15 @@ func (m *SafeOrderedMap[T]) Union(other *SafeOrderedMap[T]) *SafeOrderedMap[T] {
 // Difference returns a new ordered map containing elements present in the
 // original map but not in the other map.
 func (m *SafeOrderedMap[T]) Difference(other *SafeOrderedMap[T]) *SafeOrderedMap[T] {
-	m.RLock()
-	defer m.RUnlock()
-
 	result := New[T]()
+	if m == other {
+		return result
+	}
 
-	for _, key := range m.order {
-		if _, ok := other.data[key]; !ok {
-			result.Add(key, m.data[key])
+	snapshot, compared := m.Clone(), other.Clone()
+	for _, key := range snapshot.order {
+		if !compared.Contains(key) {
+			result.Add(key, snapshot.data[key])
 		}
 	}
 
@@ -443,11 +434,13 @@ func (m *SafeOrderedMap[T]) Difference(other *SafeOrderedMap[T]) *SafeOrderedMap
 // Subset checks if all elements of the original map are present in the other
 // map.
 func (m *SafeOrderedMap[T]) Subset(other *SafeOrderedMap[T]) bool {
-	m.RLock()
-	defer m.RUnlock()
+	if m == other {
+		return true
+	}
 
-	for _, key := range m.order {
-		if _, ok := other.data[key]; !ok {
+	snapshot, compared := m.Clone(), other.Clone()
+	for _, key := range snapshot.order {
+		if !compared.Contains(key) {
 			return false
 		}
 	}
@@ -463,14 +456,16 @@ func (m *SafeOrderedMap[T]) Superset(other *SafeOrderedMap[T]) bool {
 // Intersection returns a new ordered map containing elements present in both
 // maps.
 func (m *SafeOrderedMap[T]) Intersection(other *SafeOrderedMap[T]) *SafeOrderedMap[T] {
-	m.RLock()
-	defer m.RUnlock()
+	if m == other {
+		return m.Clone()
+	}
 
 	result := New[T]()
 
-	for _, key := range m.order {
-		if _, ok := other.data[key]; ok {
-			result.Add(key, m.data[key])
+	snapshot, compared := m.Clone(), other.Clone()
+	for _, key := range snapshot.order {
+		if compared.Contains(key) {
+			result.Add(key, snapshot.data[key])
 		}
 	}
 
@@ -483,57 +478,94 @@ func (m *SafeOrderedMap[T]) Intersection(other *SafeOrderedMap[T]) *SafeOrderedM
 
 // MarshalJSON implements json.Marshaler interface for SafeOrderedMap.
 func (m *SafeOrderedMap[T]) MarshalJSON() ([]byte, error) {
-	m.RLock()
-	defer m.RUnlock()
-
-	jsonMap := make(map[string]T)
-
-	for _, key := range m.order {
-		jsonMap[key] = m.data[key]
-	}
-
-	return json.Marshal(jsonMap)
+	return json.Marshal(m.Clone().data)
 }
 
 // UnmarshalJSON implements json.Unmarshaler interface for SafeOrderedMap.
 func (m *SafeOrderedMap[T]) UnmarshalJSON(data []byte) error {
-	m.Lock()
-	defer m.Unlock()
-
 	var temp map[string]T
-	if err := json.Unmarshal(data, &temp); err != nil {
+
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
 		return err
 	}
 
-	if m.data == nil {
-		m.data = make(map[string]T)
+	if temp == nil {
+		temp = make(map[string]T)
 	}
 
-	m.order = []string{}
-
+	order := make([]string, 0, len(temp))
 	for key := range temp {
-		m.order = append(m.order, key)
-
-		m.data[key] = temp[key]
+		order = append(order, key)
 	}
+
+	m.replace(temp, order)
 
 	return nil
 }
 
+// replace commits a fully decoded document under one lock.
+func (m *SafeOrderedMap[T]) replace(data map[string]T, order []string) {
+	m.Lock()
+	defer m.Unlock()
+
+	m.data, m.order = data, order
+}
+
 // MarshalBSON implements bson.Marshaler interface for SafeOrderedMap.
 func (m *SafeOrderedMap[T]) MarshalBSON() ([]byte, error) {
-	m.RLock()
-	defer m.RUnlock()
+	snapshot := m.Clone()
 
-	return m.MarshalJSON()
+	document := make(bson.D, 0, len(snapshot.order))
+
+	for _, key := range snapshot.order {
+		document = append(document, bson.E{Key: key, Value: snapshot.data[key]})
+	}
+
+	return bson.Marshal(document)
 }
 
 // UnmarshalBSON implements bson.Unmarshaler interface for SafeOrderedMap.
 func (m *SafeOrderedMap[T]) UnmarshalBSON(data []byte) error {
-	m.Lock()
-	defer m.Unlock()
+	document := bson.Raw(data)
 
-	return m.UnmarshalJSON(data)
+	err := document.Validate()
+	if err != nil {
+		return err
+	}
+
+	if int(binary.LittleEndian.Uint32(data[:4])) != len(data) {
+		return errors.New("invalid BSON document length")
+	}
+
+	elements, err := document.Elements()
+	if err != nil {
+		return err
+	}
+
+	temp := make(map[string]T, len(elements))
+
+	order := make([]string, 0, len(elements))
+
+	for _, element := range elements {
+		var value T
+
+		err = element.Value().Unmarshal(&value)
+		if err != nil {
+			return err
+		}
+
+		key := element.Key()
+		if _, exists := temp[key]; !exists {
+			order = append(order, key)
+		}
+
+		temp[key] = value
+	}
+
+	m.replace(temp, order)
+
+	return nil
 }
 
 //////

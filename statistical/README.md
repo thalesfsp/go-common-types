@@ -19,7 +19,7 @@ Statistical is a Go package that provides a collection of statistical operations
 | `Mean` | Calculates the mean (average) value of a slice of numbers. | `s []float64` | `float64` |
 | `Variance` | Calculates the variance of a slice of numbers. | `s []float64` | `float64, error` |
 | `StandardDeviation` | Calculates the standard deviation of a slice of numbers. | `s []float64` | `float64, error` |
-| `Percentile` | Calculates the percentile value of a slice of numbers for a given percentage (between 0 and 100). | `s []T, p float64` | `T, error` |
+| `Percentile` | Calculates the percentile value of a slice of numbers for a given fraction (between 0 and 1, inclusive). | `s []T, p float64` | `T, error` |
 
 
 ## Installation
